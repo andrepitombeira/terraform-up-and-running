@@ -144,13 +144,8 @@ resource "aws_security_group" "alb" {
   }
 }
 
-variable "server_port" {
-  description = "The port the server will use for the HTTP requests"
-  type = number
-  default = 8080
-}
-
-output "public_ip" {
-  value = aws_lb.example.dns_name
-  description = "The domain name of the load balancer"
+terraform {
+  backend "s3" {
+    key = "global/s3/terraform.tfstate"
+  }
 }
