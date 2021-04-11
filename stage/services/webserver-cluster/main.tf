@@ -146,6 +146,19 @@ resource "aws_security_group" "alb" {
 
 terraform {
   backend "s3" {
-    key = "global/s3/terraform.tfstate"
+    key = "stage/services/webserver-cluster/terraform.tfstate"
+    bucket = "terraform-up-and-running-state-bucket-12345"
+    region = "eu-central-1"
+    dynamodb_table = "terraform-up-and-running-locks"
+    encrypt = true
+  }
+}
+
+data "terraform_remote_state" "db" {
+  backend = "s3"
+  config = {
+    bucket = "terraform-up-and-running-state-bucket-12345"
+    key = "stage/data-stores/mysql/terraform.tfstate"
+    region = "eu-central-1"
   }
 }
