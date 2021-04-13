@@ -1,27 +1,27 @@
+terraform {
+  required_version = ">= 0.12, < 0.13"
+}
 provider "aws" {
   region = "eu-central-1"
 }
 
-resource "aws_db_instance" "example" {
-  identifier_prefix = "terraform-up-and-running"
-  engine = "mysql"
-  allocated_storage = 10
-  instance_class = "db.t2.micro"
-  name = "example_database"
-  username = "admin"
-  password = data.aws_secretsmanager_secret_version.db_password.secret_string
+module "webserver_cluster" {
+  source = "../../../../modules/services/webserver-cluster"
+
+  cluster_name = var.cluster_name
+  db_remote_state_bucket = var.db_remote_state_bucket
+  db_remote_state_key = var.db_remote_state_key
+
+  instance_type = "t2.micro"
+  min_size = 2
+  max_size = 2
 }
 
-data "aws_secretsmanager_secret_version" "db_password" {
-  secret_id = "mysql-master-password-stage"
-}
-
-terraform {
-  backend "s3" {
-    key = "stage/data-stores/mysql/terraform.tfstate"
-    bucket = "terraform-up-and-running-state-bucket-12345"
-    region = "eu-central-1"
-    dynamodb_table = "terraform-up-and-running-locks"
-    encrypt = true
-  }
+resource "aws_security_group_rule" "allow_testing_inbound" {
+  type = "ingress"
+  security_group_id = module.webserver_cluster.alb_security_group_id
+  from_port = 12345
+  to_port = 12345
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
 }
