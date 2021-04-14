@@ -34,18 +34,22 @@ resource "aws_security_group" "instance" {
 }
 
 resource "aws_launch_configuration" "example" {
-  image_id = "ami-0233214e13e500f77"
+  image_id = var.ami
   instance_type = var.instance_type
   security_groups = [aws_security_group.instance.id]
 
   user_data = data.template_file.user_data.rendered
-
+  
+  # Required when using launch configuration with an auto scaling group.
   lifecycle {
     create_before_destroy = true
   }
 }
 
 resource "aws_autoscaling_group" "example" {
+  # Explicitly depend on the launch configuration's name so each time it's
+  # replaced, this ASG is also replaced
+  name = "${var.cluster_name}-${aws_launch_configuration.example.name}"
   launch_configuration = aws_launch_configuration.example.name
   vpc_zone_identifier = data.aws_subnet_ids.default.ids
 
@@ -55,13 +59,27 @@ resource "aws_autoscaling_group" "example" {
   min_size = var.min_size
   max_size = var.max_size
 
+  # Wait for at least this many instances to pass health checks before
+  # considering the ASG deployment complete.
+  # min_elb_capacity = var.min_size
+
+  # When replacing this ASG, create the replacement first, and only delete
+  # the original after.
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tag {
     key = "Name"
     value = "${var.cluster_name}"
     propagate_at_launch = true
   }
   dynamic "tag" {
-    for_each = var.custom_tags
+    for_each = {
+      for key, value in var.custom_tags:
+      key => upper(value)
+      if key != "Name"
+    }
 
     content {
       key = tag.key
@@ -100,7 +118,7 @@ resource "aws_lb_listener_rule" "asg" {
 
   condition {
     path_pattern {
-      values = ["/static/*"]
+      values = ["*"]
     }
   }
 
@@ -112,7 +130,7 @@ resource "aws_lb_listener_rule" "asg" {
 }
 
 resource "aws_lb_target_group" "asg" {
-  name = "terraform-asg-example"
+  name = var.cluster_name
   port = var.server_port
   protocol = "HTTP"
   vpc_id = data.aws_vpc.default.id
@@ -174,6 +192,7 @@ data "template_file" "user_data" {
 
   vars = {
     server_port = var.server_port
+    server_text = var.server_text
     # db_address = data.terraform_remote_state.db.outputs.address
     # db_port = data.terraform_remote_state.db.outputs.port
   }

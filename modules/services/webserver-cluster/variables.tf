@@ -39,6 +39,18 @@ variable "enable_autoscaling" {
   type = bool
 }
 
+variable "ami" {
+  description = "The AMI to run in the cluster"
+  default = "ami-0233214e13e500f77"
+  type = string
+}
+
+variable "server_text" {
+  description = "The text the web server should return"
+  default = "Hello, world"
+  type = string
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # OPTIONAL PARAMETERS
 # These parameters have reasonable defaults.
