@@ -26,11 +26,13 @@ variable "enable_autoscaling" {
 variable "db_remote_state_bucket" {
   description = "The name of the S3 bucket for the database's remote state"
   type = string
+  default = "terraform-up-and-running-state-bucket-12345"
 }
 
 variable "db_remote_state_key" {
   description = "The path for the database's remote state in S3"
   type = string
+  default = "examples/hello-app/terraform.tfstate"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -66,4 +68,25 @@ variable "custom_tags" {
   description = "Custom tags to set on the Instances in the ASG"
   type = map(string)
   default = {}
+}
+
+variable "vpc_id" {
+  description = "The ID of the VPC to deploy into"
+  type = string
+  default = null
+}
+
+variable "subnet_ids" {
+  description = "The IDs of the subnets to deploy into"
+  type = list(string)
+  default = null
+}
+
+variable "mysql_config" {
+  description = "The config for the MySQL DB"
+  type = object({
+    address = string
+    port = number
+  })
+  default = null
 }
